@@ -26,6 +26,7 @@ stages:
   - job: Build
     displayName: Build
     pool:
+      name: Forlarhh2
       vmImage: $(vmImageName)
     steps:
     - task: Docker@2
