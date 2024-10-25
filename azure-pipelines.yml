@@ -6,8 +6,8 @@ pool:
 
 variables:
   VAULT_ADDR: $(http://127.0.0.1:8200)
-  VAULT_ROLE_ID: $(e575f2e8-ce7e-6a04-af30-dded0341665f)
-  VAULT_SECRET_ID: $(ae04d9a7-063a-6568-986d-dd3786faa8d8)
+  VAULT_ROLE_ID: $(dd32cdf3-7a48-1640-b970-d7e17b189c39)
+  VAULT_SECRET_ID: $(b4cc5365-ed55-5220-7fff-82f51b52901c)
 
 steps:
   # Install Vault CLI
@@ -28,8 +28,8 @@ steps:
       script: |
         # Define Vault variables
         $vaultAddr = "$(http://127.0.0.1:8200)"
-        $roleId = "$(e575f2e8-ce7e-6a04-af30-dded0341665f)"
-        $secretId = "$(ae04d9a7-063a-6568-986d-dd3786faa8d8)"
+        $roleId = "$(dd32cdf3-7a48-1640-b970-d7e17b189c39)"
+        $secretId = "$(b4cc5365-ed55-5220-7fff-82f51b52901c)"
 
         # Authenticate with Vault using AppRole
         $vaultToken = vault write -field=token auth/approle/login role_id=$roleId secret_id=$secretId
