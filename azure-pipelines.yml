@@ -1,67 +1,51 @@
-trigger:
-  branches:
-    include:
-      - main
+trigger: none
 
 pool:
   name: Forlarhh2
-  vmImage: 'ubuntu-latest'
+  vmImage: 'windows-latest'
 
 variables:
-  - group: VaultCredentials
-  - name: VAULT_ADDR
-    value: $(VAULT_ADDR)
+  VAULT_ADDR: $(http://127.0.0.1:8200)
+  VAULT_ROLE_ID: $(e575f2e8-ce7e-6a04-af30-dded0341665f)
+  VAULT_SECRET_ID: $(ae04d9a7-063a-6568-986d-dd3786faa8d8)
 
 steps:
-  # Step 1: Install HashiCorp Vault CLI
-  - task: Bash@3
+  # Install Vault CLI
+  - task: PowerShell@2
     inputs:
       targetType: 'inline'
       script: |
-        echo "Installing Vault CLI..."
-        curl -O https://releases.hashicorp.com/vault/1.10.0/vault_1.10.0_linux_amd64.zip
-        unzip vault_1.10.0_linux_amd64.zip
-        sudo mv vault /usr/local/bin/
+        Write-Output "Installing Vault CLI..."
+        Invoke-WebRequest -Uri https://releases.hashicorp.com/vault/1.10.0/vault_1.10.0_windows_amd64.zip -OutFile vault.zip
+        Expand-Archive -Path vault.zip -DestinationPath "$env:ProgramFiles\vault"
+        $env:Path += ";$env:ProgramFiles\vault"
         vault --version
-    displayName: 'Install Vault CLI'
 
-  # Step 2: Install Terraform CLI
-  - task: TerraformInstaller@0
-    inputs:
-      terraformVersion: 'latest'
-    displayName: 'Install Terraform'
-
-  # Step 3: Authenticate with Vault using AppRole
-  - task: Bash@3
+  # Authenticate to Vault and retrieve secrets
+  - task: PowerShell@2
     inputs:
       targetType: 'inline'
       script: |
-        echo "Authenticating to Vault using AppRole..."
-        vault login -method=approle role_id=$(VAULT_ROLE_ID) secret_id=$(VAULT_SECRET_ID) -format=json > login-output.json
-        export VAULT_TOKEN=$(cat login-output.json | jq -r ".auth.client_token")
-        echo "##vso[task.setvariable variable=VAULT_TOKEN]$VAULT_TOKEN"
-    env:
-      VAULT_ADDR: $(VAULT_ADDR)
-      VAULT_ROLE_ID: $(VAULT_ROLE_ID)
-      VAULT_SECRET_ID: $(VAULT_SECRET_ID)
-    displayName: 'Authenticate to Vault'
+        # Define Vault variables
+        $vaultAddr = "$(http://127.0.0.1:8200)"
+        $roleId = "$(e575f2e8-ce7e-6a04-af30-dded0341665f)"
+        $secretId = "$(ae04d9a7-063a-6568-986d-dd3786faa8d8)"
 
-  # Step 4: Initialize and Apply Terraform
-  - task: Bash@3
-    inputs:
-      targetType: 'inline'
-      script: |
-        echo "Initializing and Applying Terraform..."
-        
-        # Set Azure credentials in environment variables from Vault
-        export ARM_CLIENT_ID=$(vault kv get -field=value secret/data/azure/client_id)
-        export ARM_CLIENT_SECRET=$(vault kv get -field=value secret/data/azure/client_secret)
-        export ARM_SUBSCRIPTION_ID=$(vault kv get -field=value secret/data/azure/subscription_id)
-        export ARM_TENANT_ID=$(vault kv get -field=value secret/data/azure/tenant_id)
-        
-        # Initialize and apply Terraform
-        terraform init
-        terraform apply -auto-approve
-    env:
-      VAULT_TOKEN: $(VAULT_TOKEN)
-    displayName: 'Run Terraform'
+        # Authenticate with Vault using AppRole
+        $vaultToken = vault write -field=token auth/approle/login role_id=$roleId secret_id=$secretId
+
+        # Fetch secrets
+        $clientId = vault kv get -field=value secret/data/azure/client_id
+        $clientSecret = vault kv get -field=value secret/data/azure/client_secret
+
+        # Set environment variables for subsequent steps
+        Write-Output "##vso[task.setvariable variable=ARM_CLIENT_ID]$clientId"
+        Write-Output "##vso[task.setvariable variable=ARM_CLIENT_SECRET]$clientSecret"
+    displayName: 'Retrieve Secrets from Vault'
+
+  # Additional deployment steps
+  - script: |
+      # Use the secrets stored as environment variables in the pipeline
+      echo "Client ID: $env:ARM_CLIENT_ID"
+      echo "Client Secret is fetched and used securely"
+    displayName: 'Use Secrets in Deployment'
