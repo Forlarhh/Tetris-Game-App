@@ -4,7 +4,7 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   name     = "Alien"
-  location = "East US"
+  location = "Australia Central"
 }
 
 resource "azurerm_virtual_network" "vnet" {
