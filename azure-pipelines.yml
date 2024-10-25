@@ -27,7 +27,7 @@ steps:
   # Step 2: Install Terraform CLI
   - task: TerraformInstaller@0
     inputs:
-      terraformVersion: '1.x.x'
+      terraformVersion: 'latest'
     displayName: 'Install Terraform'
 
   # Step 3: Authenticate with Vault using AppRole
